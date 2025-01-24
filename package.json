@@ -1,0 +1,16 @@
+{
+  "name": "pcb-minecraft-backup",
+  "version": "0.0.1",
+  "description": "Node script to backup the PCB Minecraft server off-site",
+  "author": "Andy",
+  "main": "src/app.js",
+  "keywords": [
+    "nodejs",
+  ],
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "rcon": "1.1.0"
+  }
+}
