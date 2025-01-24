@@ -1,16 +1,20 @@
-const Rcon = require('rcon')
-const { exec } = require('node:child_process')
+import { Rcon } from 'rcon-client'
+import { exec } from 'node:child_process'
 
-exec('ls ./', (err, output) => {
+exec('ls -la ./', (err, output) => {
     if (err) {
-        console.error("could not execute command: ", err)
+        console.error('Could not execute command: ', err)
         return
     }
-    console.log("Output: \n", output)
+    console.log('Output: \n', output)
 })
 
-const options = {
-    tcp: true, // Minecraft uses TCP
-    challenge: false, // Minecraft does not use the Challenge protocol
-};
-client = new Rcon(host, port, password, options);
+const rcon = await Rcon.connect({
+    host: process.env.RCON_HOST,
+    port: process.env.RCON_PORT,
+    password: process.env.RCON_PASSWORD,
+})
+
+console.log(await rcon.send("list"))
+
+rcon.end()

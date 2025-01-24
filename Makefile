@@ -9,7 +9,7 @@ run: image
 	docker run -it pcb-minecraft-backup
 
 .PHONY: start
-start:
+start: image
 	docker run -v $(pwd):/app pcb-minecraft-backup npm start
 
 .PHONY: install

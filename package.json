@@ -5,12 +5,12 @@
   "author": "Andy",
   "main": "src/app.js",
   "keywords": [
-    "nodejs",
+    "nodejs"
   ],
   "scripts": {
-    "start": "node src/app.js"
+    "start": "node --env-file=.env src/app.js"
   },
   "dependencies": {
-    "rcon": "1.1.0"
+    "rcon-client": "4.2.5"
   }
 }
