@@ -1,5 +1,5 @@
-import { Rcon } from 'rcon-client'
 import { exec } from 'node:child_process'
+import { sendCommand } from './http.js'
 
 exec('ls -la ./', (err, output) => {
     if (err) {
@@ -9,12 +9,5 @@ exec('ls -la ./', (err, output) => {
     console.log('Output: \n', output)
 })
 
-const rcon = await Rcon.connect({
-    host: process.env.RCON_HOST,
-    port: process.env.RCON_PORT,
-    password: process.env.RCON_PASSWORD,
-})
-
-console.log(await rcon.send("list"))
-
-rcon.end()
+const response = await sendCommand('list')
+console.log(response)

@@ -4,6 +4,7 @@
   "description": "Node script to backup the PCB Minecraft server off-site",
   "author": "Andy",
   "main": "src/app.js",
+  "type": "module",
   "keywords": [
     "nodejs"
   ],
@@ -11,6 +12,6 @@
     "start": "node --env-file=.env src/app.js"
   },
   "dependencies": {
-    "rcon-client": "4.2.5"
+    "axios": "1.7.9"
   }
 }
