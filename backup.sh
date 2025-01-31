@@ -7,20 +7,20 @@ function print_usage() {
     Usage: $(basename $0) [OPTIONS]
 
     Options:
-      -d, --directory <path>       Path to the directory to backup
-      -t, --target <path>          Directory in the bucket to store the backups
-      -h, --help                   Display usage
+      -i  --init                  Initializes the duplicacy storage, passing in the path to the directory
+      -p, --proxy <args>          Forwards the arguments to duplicacy but with env vars exported
+      -h, --help                  Display usage
   "
 }
 
 function get_args() {
-  while getopts 'd:t:h' OPTION; do
+  while getopts 'i:p:h' OPTION; do
     case "$OPTION" in
-      d)
+      i)
         BACKUP_DIR="$OPTARG"
         ;;
-      t)
-        TARGET_DIR="$OPTARG"
+      p)
+        PROXY="$OPTARG"
         ;;
       h)
         print_usage
@@ -35,13 +35,9 @@ function get_args() {
   shift "$(($OPTIND -1))"
 
   if [[ -z "$BACKUP_DIR" ]]; then
-    echo "Error: backup directory must be specified with -d flag"
+    echo "Error: backup directory must accompany the -i flag"
     exit 1
   fi
-  if [[ -z "$TARGET_DIR" ]]; then
-      echo "Error: target directory in the bucket must be specified with -t flag"
-      exit 1
-    fi
 }
 
 # Export all entries in the .env file as environment variables
@@ -57,6 +53,15 @@ function load_env_file() {
   assert_env_var "PTERODACTYL_SERVER_IDENTIFIER"
   assert_env_var "PTERODACTYL_BASE_URL"
   assert_env_var "DISCORD_WEBHOOK_URL"
+
+  # Export key to env to avoid interactive authentication when
+  # initializing the repo.
+  #
+  # Normally the key is DUPLICACY_B2_ID, but for non-default storage
+  # it becomes DUPLICACY_<STORAGENAME>_B2_ID in all uppercase
+  # See https://github.com/gilbertchen/duplicacy/wiki/Managing-Passwords
+  export DUPLICACY_MINECRAFT_B2_ID=$B2_KEY_ID
+  export DUPLICACY_MINECRAFT_B2_KEY=$B2_APPLICATION_KEY
 }
 
 # Exits if the given command is missing
@@ -79,49 +84,58 @@ function assert_env_var() {
   fi
 }
 
-function backup() {
+function init() {
   local backup_dir="$1"
-  local s3_endpoint="$2"
 
-  # TODO: log to file system
+  # B2 application key sometimes contain slashes. Since the endpoint
+  # is a URI, the key specifically needs to be uri encoded
+  local storage_url="b2://${B2_BUCKET_NAME}"
 
-  duplicity \
-    --full-if-older-than 7D \
-    --no-encryption \
-    --verbosity 8 \
-    "${backup_dir}" \
-    "${s3_endpoint}"
+  duplicacy init \
+    -erasure-coding 5:2 \
+    -repository "$backup_dir" \
+    -storage-name "minecraft" \
+    "pcb-minecraft" \
+    "$storage_url"
+}
+
+function backup() {
+  # Memo:
+  #  -background to force reading secrets from env vars (i.e. non-interactive)
+  #  -log to add timestamps and other useful data for logging
+  duplicacy backup \
+    -storage "minecraft" \
+    -e -key public.pem \
+    -stats \
+    -background \
+    -log
 }
 
 function verify() {
-  local backup_dir="$1"
-  local s3_endpoint="$2"
-
-  # TODO: log to file system
-
-  duplicity verify \
-    --no-encryption \
-    "${s3_endpoint}" \
-    "${backup_dir}"
+  # TODO: check whether using -files will hurt my wallet...
+  duplicacy check \
+    -storage "minecraft" \
+    -rewrite \
+    -background \
+    -log
 }
 
 function clean_up() {
-  local s3_endpoint="$1"
-
-  # TODO: log to file system
-
-  duplicity remove-older-than 30D \
-    --force \
-    "${s3_endpoint}"
+  # 0:30 = Remove all backups older than 30 days
+  duplicacy prune \
+    -storage "minecraft" \
+    -keep 0:30 \
+    -background \
+    -log
 }
 
 function send_minecraft_command() {
-    local command="$1"
+  local command="$1"
 
-    curl -X POST "${PTERODACTYL_BASE_URL}/api/client/servers/${PTERODACTYL_SERVER_IDENTIFIER}/command" \
-        -H "Authorization: Bearer ${PTERODACTYL_TOKEN}" \
-        -H "Content-Type: application/json" \
-        -d "{\"command\":\"${command}\"}"
+  curl -X POST "${PTERODACTYL_BASE_URL}/api/client/servers/${PTERODACTYL_SERVER_IDENTIFIER}/command" \
+    -H "Authorization: Bearer ${PTERODACTYL_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "{\"command\":\"${command}\"}"
 }
 
 function enable_world_saving() {
@@ -156,18 +170,25 @@ function notify_success() {
 }
 
 function main() {
-  assert_command "jq"
-  assert_command "duplicity"
+  assert_command "duplicacy"
 
   get_args "$@"
   load_env_file
 
-  # B2 application key sometimes contain slashes. Since the endpoint
-  # is a URI, the key specifically needs to be uri encoded
-  local app_key=$(echo -n "${B2_APPLICATION_KEY}" | jq -sRr @uri)
-  local endpoint="b2://${B2_KEY_ID}:${app_key}@${B2_BUCKET_NAME}/${TARGET_DIR}"
+  if [ -n "$PROXY" ]; then
+    eval "duplicacy $PROXY"
+    exit 0
+  fi
 
-  start=$(date +%s)
+  if [ -n "$BACKUP_DIR" ]; then
+    echo "Initializing repository..."
+    init "$BACKUP_DIR"
+    exit 0
+  fi
+
+  local start=$(date +%s)
+
+  # TODO: ping health check service
 
   # Always re-enable world saving on the server, regardless of
   # success or failure
@@ -176,30 +197,35 @@ function main() {
   disable_world_saving
   sleep 10s # Wait for save to finish
 
-  backup "$BACKUP_DIR" "$endpoint" || {
+  backup || {
     echo "Backup failed, notifying Discord..."
     notify_failure "Backup failed"
     exit 1
   }
 
-  verify "$BACKUP_DIR" "$endpoint" || {
+  verify || {
     echo "Backup verification failed, notifying Discord..."
     notify_failure "Backup verification failed"
     exit 1
   }
 
-  clean_up "$endpoint" || {
+  clean_up || {
     echo "Backup clean-up failed, notifying Discord..."
     notify_failure "Backup clean-up failed"
     exit 1
   }
 
-  end=$(date +%s)
-  duration=$((end - start))
+  local end=$(date +%s)
+  local duration=$((end - start))
   echo "Operation completed in $duration seconds"
+
   notify_success "Backup completed"
+
+  # Clean up logs older than 60 days
+  find /var/log/pcb-backup/ -mindepth 1 -mtime +60 -delete
 
   exit 0
 }
 
-main "$@"
+mkdir -p /var/log/pcb-backup
+main "$@" >> "/var/log/pcb-backup/backup-$(date +'%Y-%m-%d').log"
