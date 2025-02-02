@@ -100,11 +100,10 @@ function init() {
   local storage_url="b2://${B2_BUCKET_NAME}"
 
   duplicacy init \
-    -e -key public.pem \
+    -encrypt -key public.pem \
     -erasure-coding 5:2 \
     -repository "$backup_dir" \
     -storage-name "$STORAGE_NAME" \
-    -background \
     "pcb-minecraft" \
     "$storage_url"
 }
@@ -115,7 +114,7 @@ function backup() {
   #  -log to add timestamps and other useful data for logging
   duplicacy backup \
     -storage "$STORAGE_NAME" \
-    -e -key public.pem \
+    -encrypt -key public.pem \
     -stats \
     -background \
     -log
