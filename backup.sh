@@ -77,11 +77,12 @@ function load_env_file() {
   eval "export DUPLICACY_${name}_B2_ID=$B2_KEY_ID"
   eval "export DUPLICACY_${name}_B2_KEY=$B2_APPLICATION_KEY"
 
+  # Duplicacy encrypts the `config` file with a different password
+  export "DUPLICACY_${name}_PASSWORD=$DUPLICACY_CONFIG_PASSWORD"
+
   echo "Exported DUPLICACY_${name}_B2_ID"
   echo "Exported DUPLICACY_${name}_B2_KEY"
-
-  # Duplicacy encrypts the `config` file with a different password
-  export "DUPLICACY_PASSWORD=$DUPLICACY_CONFIG_PASSWORD"
+  echo "Exported DUPLICACY_${name}_PASSWORD"
 }
 
 # Exits if the given command is missing
