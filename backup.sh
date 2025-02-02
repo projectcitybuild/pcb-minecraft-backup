@@ -10,12 +10,14 @@ function print_usage() {
     Usage: $(basename $0) [OPTIONS]
 
     Options:
-      -i  --init      Initializes the Duplicacy storage, passing in the path to the directory to be backed up
+      -i  --init        Initializes the Duplicacy storage, passing in the path to the directory to be backed up
 
-      -n  --name      Snapshot id to uniquely identify the backup repo. Required because multiple repos can
-                      be attached to the same storage
+      -n  --name        Snapshot id to uniquely identify the backup repo. Required because multiple repos can
+                        be attached to the same storage
 
-      -h, --help      Display command usage info
+      -d  --dry-run     Only prints out what would be backed-up
+
+      -h, --help        Display command usage info
   "
 }
 

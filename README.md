@@ -34,6 +34,9 @@ Initialize the repository
 ./backup.sh -i /my/folder/to/backup
 ```
 
+> [!NOTE]  
+> You will be prompted to set a storage password by Duplicacy. This is only used to encrypt the `config` file (see https://github.com/gilbertchen/duplicacy/wiki/init)
+
 ### Backup
 
 ```
