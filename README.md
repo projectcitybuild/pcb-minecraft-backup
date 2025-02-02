@@ -15,7 +15,7 @@ Bash script that can be run on a cronjob to backup a Minecraft server.
 
 Generate an asymmetric key pair for encryption
 
-```
+```bash
 openssl genrsa -aes256 -out private.pem 2048
 openssl rsa -in private.pem  -pubout -out public.pem
 ```
@@ -23,14 +23,14 @@ openssl rsa -in private.pem  -pubout -out public.pem
 
 Copy `.env.example` as `.env` and fill in the required secrets
 
-```
+```bash
 cp .env.example .env
 ```
 
 
 Initialize the repository
 
-```
+```bash
 ./backup.sh -i /my/folder/to/backup
 ```
 
@@ -40,8 +40,21 @@ To update the file include/exclude filter, modify the `filters` file before perf
 
 See https://github.com/gilbertchen/duplicacy/wiki/Include-Exclude-Patterns for details.
 
+To test what will get included/excluded, perform a backup as a dry-run.
+
+```bash
+# Print everything included/excluded
+./backup.sh -d
+
+# Print only what will be excluded
+./backup.sh -d | grep 'PATTERN_EXCLUDE'
+
+# Print only what will be included
+./backup.sh -d | grep 'PATTERN_INCLUDE'
+```
+
 ### Backup
 
-```
+```bash
 ./backup.sh
 ```
