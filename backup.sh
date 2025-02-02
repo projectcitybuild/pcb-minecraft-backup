@@ -127,7 +127,7 @@ function backup() {
   #  -log to add timestamps and other useful data for logging
   #  -enum-only prints out included/excluded files for filter testing
   #  -debug is required to do a -enum-only
-  local command = "duplicacy backup"
+  local command="duplicacy backup"
   command="$command -storage \"$STORAGE_NAME\""
   command="$command -encrypt -key public.pem"
   command="$command -stats"
