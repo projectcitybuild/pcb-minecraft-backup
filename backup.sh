@@ -100,6 +100,7 @@ function init() {
   local storage_url="b2://${B2_BUCKET_NAME}"
 
   duplicacy init \
+    -e -key public.pem \
     -erasure-coding 5:2 \
     -repository "$backup_dir" \
     -storage-name "$STORAGE_NAME" \
