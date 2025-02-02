@@ -125,7 +125,8 @@ function backup() {
     -encrypt -key public.pem \
     -stats \
     -background \
-    -log
+    -log \
+    $( [ "$DRY_RUN" = true ] && echo "-enum-only -dry-run" )
 }
 
 function verify() {

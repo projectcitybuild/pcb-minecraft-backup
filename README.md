@@ -37,6 +37,12 @@ Initialize the repository
 > [!NOTE]  
 > You will be prompted to set a storage password by Duplicacy. This is only used to encrypt the `config` file (see https://github.com/gilbertchen/duplicacy/wiki/init)
 
+### Backup filter
+
+To update the file include/exclude filter, modify the `filters` file before performing your backup.
+
+See https://github.com/gilbertchen/duplicacy/wiki/Include-Exclude-Patterns for details.
+
 ### Backup
 
 ```
