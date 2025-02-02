@@ -178,57 +178,63 @@ function notify_success() {
 }
 
 function main() {
-  assert_command "duplicacy"
+  local log_dir="/var/log/pcb-backup"
+  mkdir -p "$log_dir"
 
-  get_args "$@"
-  load_env_file
+  {
+    assert_command "duplicacy"
 
-  if [ -n "$BACKUP_DIR" ]; then
-    echo "Initializing repository..."
-    init "$BACKUP_DIR"
+    get_args "$@"
+    load_env_file
+
+    if [ -n "$BACKUP_DIR" ]; then
+      echo "Initializing repository..."
+      init "$BACKUP_DIR"
+      exit 0
+    fi
+
+    local start=$(date +%s)
+
+    # TODO: ping health check service
+
+    # Always re-enable world saving on the server, regardless of
+    # success or failure
+    trap 'enable_world_saving' EXIT
+
+    disable_world_saving
+    sleep 10s # Wait for save to finish
+
+    backup || {
+      echo "Backup failed, notifying Discord..."
+      notify_failure "[$STORAGE_NAME] Backup failed"
+      exit 1
+    }
+
+    verify || {
+      echo "Backup verification failed, notifying Discord..."
+      notify_failure "[$STORAGE_NAME] Backup verification failed"
+      exit 1
+    }
+
+    clean_up || {
+      echo "Backup clean-up failed, notifying Discord..."
+      notify_failure "[$STORAGE_NAME] Backup clean-up failed"
+      exit 1
+    }
+
+    local end=$(date +%s)
+    local duration=$((end - start))
+    echo "Operation completed in $duration seconds"
+
+    notify_success "[$STORAGE_NAME] Backup completed"
+
+    # Clean up logs older than 60 days
+    find /var/log/pcb-backup/ -mindepth 1 -mtime +60 -delete
+
     exit 0
-  fi
-
-  local start=$(date +%s)
-
-  # TODO: ping health check service
-
-  # Always re-enable world saving on the server, regardless of
-  # success or failure
-  trap 'enable_world_saving' EXIT
-
-  disable_world_saving
-  sleep 10s # Wait for save to finish
-
-  backup || {
-    echo "Backup failed, notifying Discord..."
-    notify_failure "[$STORAGE_NAME] Backup failed"
-    exit 1
-  }
-
-  verify || {
-    echo "Backup verification failed, notifying Discord..."
-    notify_failure "[$STORAGE_NAME] Backup verification failed"
-    exit 1
-  }
-
-  clean_up || {
-    echo "Backup clean-up failed, notifying Discord..."
-    notify_failure "[$STORAGE_NAME] Backup clean-up failed"
-    exit 1
-  }
-
-  local end=$(date +%s)
-  local duration=$((end - start))
-  echo "Operation completed in $duration seconds"
-
-  notify_success "[$STORAGE_NAME] Backup completed"
-
-  # Clean up logs older than 60 days
-  find /var/log/pcb-backup/ -mindepth 1 -mtime +60 -delete
-
-  exit 0
+  } | tee -a "$log_dir/$STORAGE_NAME-$(date +'%Y-%m-%d').log"
+  # Pipe to tee so that it logs but also outputs to console
+  # Memo: -a = append instead of overwrite
 }
 
-mkdir -p /var/log/pcb-backup
-main "$@" >> "/var/log/pcb-backup/$STORAGE_NAME-$(date +'%Y-%m-%d').log"
+main "$@"
