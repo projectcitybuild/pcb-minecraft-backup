@@ -127,7 +127,6 @@ function backup() {
   #  -log to add timestamps and other useful data for logging
   duplicacy backup \
     -storage "$STORAGE_NAME" \
-    -encrypt -key public.pem \
     -stats \
     -background \
     -log
