@@ -2,15 +2,20 @@
 
 set -e
 
+LOG_DIR="/var/log/pcb-backup"
+STORAGE_NAME="PCB_B2"
+
 function print_usage() {
   echo "
     Usage: $(basename $0) [OPTIONS]
 
     Options:
-      -i  --init                  Initializes the duplicacy storage, passing in the path to the directory
-      -n  --name                  Storage name to uniquely identify the backup repo
-      -p, --proxy <args>          Forwards the arguments to duplicacy but with env vars exported
-      -h, --help                  Display usage
+      -i  --init      Initializes the Duplicacy storage, passing in the path to the directory to be backed up
+
+      -n  --name      Snapshot id to uniquely identify the backup repo. Required because multiple repos can
+                      be attached to the same storage
+
+      -h, --help      Display command usage info
   "
 }
 
@@ -21,7 +26,7 @@ function get_args() {
         BACKUP_DIR="$OPTARG"
         ;;
       n)
-        STORAGE_NAME="$OPTARG"
+        SNAPSHOT_ID="$OPTARG"
         ;;
       h)
         print_usage
@@ -39,8 +44,8 @@ function get_args() {
     echo "Error: backup directory must accompany the -i option"
     exit 1
   fi
-  if [[ -z "$STORAGE_NAME" ]]; then
-    echo "Error: name must be specified with the -n option"
+  if [[ -z "$SNAPSHOT_ID" ]]; then
+    echo "Error: snapshot id must be specified with the -n option"
     exit 1
   fi
 }
@@ -65,11 +70,12 @@ function load_env_file() {
   # Normally the key is DUPLICACY_B2_ID, but for non-default storage
   # it becomes DUPLICACY_<STORAGENAME>_B2_ID in all uppercase
   # See https://github.com/gilbertchen/duplicacy/wiki/Managing-Passwords
-  eval "export DUPLICACY_${STORAGE_NAME^^}_B2_ID=$B2_KEY_ID"
-  eval "export DUPLICACY_${STORAGE_NAME^^}_B2_KEY=$B2_APPLICATION_KEY"
+  local name="${STORAGE_NAME^^}"
+  eval "export DUPLICACY_${name}_B2_ID=$B2_KEY_ID"
+  eval "export DUPLICACY_${name}_B2_KEY=$B2_APPLICATION_KEY"
 
-  echo "Exported DUPLICACY_${STORAGE_NAME^^}_B2_ID"
-  echo "Exported DUPLICACY_${STORAGE_NAME^^}_B2_KEY"
+  echo "Exported DUPLICACY_${name}_B2_ID"
+  echo "Exported DUPLICACY_${name}_B2_KEY"
 }
 
 # Exits if the given command is missing
@@ -104,7 +110,7 @@ function init() {
     -erasure-coding 5:2 \
     -repository "$backup_dir" \
     -storage-name "$STORAGE_NAME" \
-    "pcb-minecraft" \
+    "$SNAPSHOT_ID" \
     "$storage_url"
 }
 
@@ -179,8 +185,7 @@ function notify_success() {
 }
 
 function main() {
-  local log_dir="/var/log/pcb-backup"
-  mkdir -p "$log_dir"
+  mkdir -p "$LOG_DIR"
 
   {
     assert_command "duplicacy"
@@ -230,10 +235,10 @@ function main() {
     notify_success "[$STORAGE_NAME] Backup completed"
 
     # Clean up logs older than 60 days
-    find /var/log/pcb-backup/ -mindepth 1 -mtime +60 -delete
+    find "$LOG_DIR" -mindepth 1 -mtime +60 -delete
 
     exit 0
-  } | tee -a "$log_dir/$STORAGE_NAME-$(date +'%Y-%m-%d').log"
+  } | tee -a "$LOG_DIR/$STORAGE_NAME-$(date +'%Y-%m-%d').log"
   # Pipe to tee so that it logs but also outputs to console
   # Memo: -a = append instead of overwrite
 }
