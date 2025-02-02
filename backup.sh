@@ -207,6 +207,10 @@ function main() {
       exit 0
     fi
 
+    echo "Updating file filter..."
+    cp filters .duplicacy/filters
+
+    echo "Beginning backup..."
     local start=$(date +%s)
 
     # TODO: ping health check service
