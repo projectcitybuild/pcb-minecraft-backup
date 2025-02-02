@@ -132,9 +132,11 @@ function backup() {
   # Memo:
   #  -background to force reading secrets from env vars (i.e. non-interactive)
   #  -log to add timestamps and other useful data for logging
+  #  -threads is for uploading chunks (i.e. upload speed)
   duplicacy -log -background backup \
       -storage "$STORAGE_NAME" \
-      -stats
+      -stats \
+      -threads 16
 }
 
 function verify() {
