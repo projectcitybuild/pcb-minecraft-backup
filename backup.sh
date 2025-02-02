@@ -229,10 +229,10 @@ function main() {
 
     # Always re-enable world saving on the server, regardless of
     # success or failure
-    trap 'enable_world_saving' EXIT
+#    trap 'enable_world_saving' EXIT
 
-    disable_world_saving
-    sleep 10s # Wait for save to finish
+#    disable_world_saving
+#    sleep 10s # Wait for save to finish
 
     backup || {
       echo "Backup failed, notifying Discord..."
