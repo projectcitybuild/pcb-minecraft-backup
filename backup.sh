@@ -65,8 +65,8 @@ function load_env_file() {
   # Normally the key is DUPLICACY_B2_ID, but for non-default storage
   # it becomes DUPLICACY_<STORAGENAME>_B2_ID in all uppercase
   # See https://github.com/gilbertchen/duplicacy/wiki/Managing-Passwords
-  export DUPLICACY_MINECRAFT_B2_ID=$B2_KEY_ID
-  export DUPLICACY_MINECRAFT_B2_KEY=$B2_APPLICATION_KEY
+  export "DUPLICACY_${STORAGE_NAME^}_B2_ID=$B2_KEY_ID"
+  export "DUPLICACY_${STORAGE_NAME^}_B2_KEY=$B2_APPLICATION_KEY"
 }
 
 # Exits if the given command is missing
@@ -179,11 +179,6 @@ function main() {
 
   get_args "$@"
   load_env_file
-
-  if [ -n "$PROXY" ]; then
-    eval "duplicacy $PROXY"
-    exit 0
-  fi
 
   if [ -n "$BACKUP_DIR" ]; then
     echo "Initializing repository..."
