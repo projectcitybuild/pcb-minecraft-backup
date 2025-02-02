@@ -138,6 +138,7 @@ function backup() {
     command="$command -debug -enum-only"
   fi
 
+  echo "$command"
   eval "$command"
 }
 
