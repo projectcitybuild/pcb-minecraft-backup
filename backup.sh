@@ -8,19 +8,20 @@ function print_usage() {
 
     Options:
       -i  --init                  Initializes the duplicacy storage, passing in the path to the directory
+      -n  --name                  Storage name to uniquely identify the backup repo
       -p, --proxy <args>          Forwards the arguments to duplicacy but with env vars exported
       -h, --help                  Display usage
   "
 }
 
 function get_args() {
-  while getopts 'i:p:h' OPTION; do
+  while getopts 'i:n:p:h' OPTION; do
     case "$OPTION" in
       i)
         BACKUP_DIR="$OPTARG"
         ;;
-      p)
-        PROXY="$OPTARG"
+      n)
+        STORAGE_NAME="$OPTARG"
         ;;
       h)
         print_usage
@@ -35,7 +36,11 @@ function get_args() {
   shift "$(($OPTIND -1))"
 
   if [[ -z "$BACKUP_DIR" ]]; then
-    echo "Error: backup directory must accompany the -i flag"
+    echo "Error: backup directory must accompany the -i option"
+    exit 1
+  fi
+  if [[ -n "$STORAGE_NAME" ]]; then
+    echo "Error: name must be specified with the -n option"
     exit 1
   fi
 }
@@ -94,7 +99,7 @@ function init() {
   duplicacy init \
     -erasure-coding 5:2 \
     -repository "$backup_dir" \
-    -storage-name "minecraft" \
+    -storage-name "$STORAGE_NAME" \
     "pcb-minecraft" \
     "$storage_url"
 }
@@ -104,7 +109,7 @@ function backup() {
   #  -background to force reading secrets from env vars (i.e. non-interactive)
   #  -log to add timestamps and other useful data for logging
   duplicacy backup \
-    -storage "minecraft" \
+    -storage "$STORAGE_NAME" \
     -e -key public.pem \
     -stats \
     -background \
@@ -114,7 +119,7 @@ function backup() {
 function verify() {
   # TODO: check whether using -files will hurt my wallet...
   duplicacy check \
-    -storage "minecraft" \
+    -storage "$STORAGE_NAME" \
     -rewrite \
     -background \
     -log
@@ -123,7 +128,7 @@ function verify() {
 function clean_up() {
   # 0:30 = Remove all backups older than 30 days
   duplicacy prune \
-    -storage "minecraft" \
+    -storage "$STORAGE_NAME" \
     -keep 0:30 \
     -background \
     -log
@@ -199,19 +204,19 @@ function main() {
 
   backup || {
     echo "Backup failed, notifying Discord..."
-    notify_failure "Backup failed"
+    notify_failure "[$STORAGE_NAME] Backup failed"
     exit 1
   }
 
   verify || {
     echo "Backup verification failed, notifying Discord..."
-    notify_failure "Backup verification failed"
+    notify_failure "[$STORAGE_NAME] Backup verification failed"
     exit 1
   }
 
   clean_up || {
     echo "Backup clean-up failed, notifying Discord..."
-    notify_failure "Backup clean-up failed"
+    notify_failure "[$STORAGE_NAME] Backup clean-up failed"
     exit 1
   }
 
@@ -219,7 +224,7 @@ function main() {
   local duration=$((end - start))
   echo "Operation completed in $duration seconds"
 
-  notify_success "Backup completed"
+  notify_success "[$STORAGE_NAME] Backup completed"
 
   # Clean up logs older than 60 days
   find /var/log/pcb-backup/ -mindepth 1 -mtime +60 -delete
@@ -228,4 +233,4 @@ function main() {
 }
 
 mkdir -p /var/log/pcb-backup
-main "$@" >> "/var/log/pcb-backup/backup-$(date +'%Y-%m-%d').log"
+main "$@" >> "/var/log/pcb-backup/$STORAGE_NAME-$(date +'%Y-%m-%d').log"
