@@ -39,7 +39,7 @@ function get_args() {
     echo "Error: backup directory must accompany the -i option"
     exit 1
   fi
-  if [[ -n "$STORAGE_NAME" ]]; then
+  if [[ -z "$STORAGE_NAME" ]]; then
     echo "Error: name must be specified with the -n option"
     exit 1
   fi
