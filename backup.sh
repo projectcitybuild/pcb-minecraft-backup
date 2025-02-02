@@ -67,6 +67,9 @@ function load_env_file() {
   # See https://github.com/gilbertchen/duplicacy/wiki/Managing-Passwords
   export "DUPLICACY_${STORAGE_NAME^}_B2_ID=$B2_KEY_ID"
   export "DUPLICACY_${STORAGE_NAME^}_B2_KEY=$B2_APPLICATION_KEY"
+
+  echo "Exported DUPLICACY_${STORAGE_NAME^}_B2_ID"
+  echo "Exported DUPLICACY_${STORAGE_NAME^}_B2_KEY"
 }
 
 # Exits if the given command is missing
