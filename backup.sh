@@ -24,7 +24,7 @@ function print_usage() {
 function get_args() {
   DRY_RUN=false
 
-  while getopts 'i:n:p:dh' OPTION; do
+  while getopts 'i:n:dh' OPTION; do
     case "$OPTION" in
       i)
         BACKUP_DIR="$OPTARG"
@@ -47,11 +47,7 @@ function get_args() {
   done
   shift "$(($OPTIND -1))"
 
-  if [[ -z "$BACKUP_DIR" ]]; then
-    echo "Error: backup directory must accompany the -i option"
-    exit 1
-  fi
-  if [[ -z "$SNAPSHOT_ID" ]]; then
+  if [[ -n "$BACKUP_DIR" && -z "$SNAPSHOT_ID" ]]; then
     echo "Error: snapshot id must be specified with the -n option"
     exit 1
   fi
