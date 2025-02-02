@@ -79,6 +79,9 @@ function load_env_file() {
 
   echo "Exported DUPLICACY_${name}_B2_ID"
   echo "Exported DUPLICACY_${name}_B2_KEY"
+
+  # Duplicacy encrypts the `config` file with a different password
+  export "DUPLICACY_PASSWORD=$DUPLICACY_CONFIG_PASSWORD"
 }
 
 # Exits if the given command is missing
