@@ -123,13 +123,15 @@ function backup() {
   fi
 
   # Memo:
+  #  -background to force reading secrets from env vars (i.e. non-interactive)
   #  -log to add timestamps and other useful data for logging
   duplicacy backup \
     -storage "$STORAGE_NAME" \
     -encrypt -key public.pem \
     -stats \
+    -background \
     -log \
-    $( [ "$DRY_RUN" = true ] && echo "-enum-only -dry-run" )
+    $( [ "$DRY_RUN" = true ] && echo "-d -enum-only -dry-run" )
 }
 
 function verify() {
@@ -137,6 +139,7 @@ function verify() {
   duplicacy check \
     -storage "$STORAGE_NAME" \
     -rewrite \
+    -background \
     -log
 }
 
@@ -145,6 +148,7 @@ function clean_up() {
   duplicacy prune \
     -storage "$STORAGE_NAME" \
     -keep 0:30 \
+    -background \
     -log
 }
 
