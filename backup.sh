@@ -62,10 +62,12 @@ function load_env_file() {
   assert_env_var "B2_KEY_ID"
   assert_env_var "B2_APPLICATION_KEY"
   assert_env_var "B2_BUCKET_NAME"
+  assert_env_var "DUPLICACY_CONFIG_PASSWORD"
   assert_env_var "PTERODACTYL_TOKEN"
   assert_env_var "PTERODACTYL_SERVER_IDENTIFIER"
   assert_env_var "PTERODACTYL_BASE_URL"
   assert_env_var "DISCORD_WEBHOOK_URL"
+  assert_env_var "HEALTHCHECK_URL"
 
   # Export key to env to avoid interactive authentication when
   # initializing the repo.
@@ -103,6 +105,11 @@ function assert_env_var() {
     echo "Error: $key environment variable is not set"
     exit 1
   fi
+}
+
+function sync_file_filter() {
+  echo "Updating the file filter..."
+  cp filters .duplicacy/filters
 }
 
 function init() {
@@ -196,6 +203,13 @@ function notify_success() {
   post_discord_message "✔ $message" "2400045"
 }
 
+function ping_healthcheck() {
+  echo "Pinging healthcheck service..."
+
+  # -m 10 = Maximum time allowed for a HTTP request to take (per request - reset on each retry)
+  curl -m 10 --retry 5 "${HEALTHCHECK_URL}"
+}
+
 function main() {
   mkdir -p "$LOG_DIR"
 
@@ -211,18 +225,25 @@ function main() {
       exit 0
     fi
 
-    echo "Updating file filter..."
-    cp filters .duplicacy/filters
+    sync_file_filter
 
     if [ "$DRY_RUN" = true ]; then
       backup_dry_run
       exit 0
     fi
 
+    # Inform the healthcheck service that the (backup) script ran.
+    #
+    # We don't care about the result of the backup here.
+    # Failure to ping the healthcheck reports to us that there's a
+    # problem with the cronjob or the service running this script.
+    ping_healthcheck || {
+      echo "Warning: Failed to ping healthcheck service..."
+      notify_failure "[$STORAGE_NAME] Warning: Failed to ping healthcheck service"
+    }
+
     echo "Beginning backup..."
     local start=$(date +%s)
-
-    # TODO: ping health check service
 
     # Always re-enable world saving on the server, regardless of
     # success or failure
