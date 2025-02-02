@@ -112,7 +112,7 @@ function init() {
   # is a URI, the key specifically needs to be uri encoded
   local storage_url="b2://${B2_BUCKET_NAME}"
 
-  duplicacy init \
+  duplicacy -log -background init \
     -encrypt -key public.pem \
     -erasure-coding 5:2 \
     -repository "$backup_dir" \
@@ -125,29 +125,23 @@ function backup() {
   # Memo:
   #  -background to force reading secrets from env vars (i.e. non-interactive)
   #  -log to add timestamps and other useful data for logging
-  duplicacy backup \
-    -storage "$STORAGE_NAME" \
-    -stats \
-    -background \
-    -log
+  duplicacy -log -background backup \
+      -storage "$STORAGE_NAME" \
+      -stats
 }
 
 function verify() {
   # TODO: check whether using -files will hurt my wallet...
-  duplicacy check \
+  duplicacy -log -background check \
     -storage "$STORAGE_NAME" \
-    -rewrite \
-    -background \
-    -log
+    -rewrite
 }
 
 function clean_up() {
   # 0:30 = Remove all backups older than 30 days
-  duplicacy prune \
+  duplicacy -log -background prune \
     -storage "$STORAGE_NAME" \
-    -keep 0:30 \
-    -background \
-    -log
+    -keep 0:30
 }
 
 function backup_dry_run() {
