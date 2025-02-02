@@ -128,14 +128,14 @@ function backup() {
   #  -enum-only prints out included/excluded files for filter testing
   #  -debug is required to do a -enum-only
   local command = "duplicacy backup"
-  command+=" -storage \"$STORAGE_NAME\""
-  command+=" -encrypt -key public.pem"
-  command+=" -stats"
-  command+=" -background"
-  command+=" -log"
+  command="$command -storage \"$STORAGE_NAME\""
+  command="$command -encrypt -key public.pem"
+  command="$command -stats"
+  command="$command -background"
+  command="$command -log"
 
   if [ "$DRY_RUN" = true ]; then
-    command+=" -debug -enum-only"
+    command="$command -debug -enum-only"
   fi
 
   eval "$command"
