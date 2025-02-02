@@ -22,13 +22,18 @@ function print_usage() {
 }
 
 function get_args() {
-  while getopts 'i:n:p:h' OPTION; do
+  DRY_RUN=false
+
+  while getopts 'i:n:p:dh' OPTION; do
     case "$OPTION" in
       i)
         BACKUP_DIR="$OPTARG"
         ;;
       n)
         SNAPSHOT_ID="$OPTARG"
+        ;;
+      d)
+        DRY_RUN=true
         ;;
       h)
         print_usage
@@ -117,6 +122,10 @@ function init() {
 }
 
 function backup() {
+  if [ "$DRY_RUN" = true ]; then
+    echo "Running in --dry-run mode. Files will not be uploaded..."
+  fi
+
   # Memo:
   #  -background to force reading secrets from env vars (i.e. non-interactive)
   #  -log to add timestamps and other useful data for logging
