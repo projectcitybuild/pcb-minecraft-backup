@@ -104,6 +104,7 @@ function init() {
     -erasure-coding 5:2 \
     -repository "$backup_dir" \
     -storage-name "$STORAGE_NAME" \
+    -background \
     "pcb-minecraft" \
     "$storage_url"
 }
