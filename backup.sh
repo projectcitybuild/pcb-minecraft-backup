@@ -118,28 +118,15 @@ function init() {
 }
 
 function backup() {
-  if [ "$DRY_RUN" = true ]; then
-    echo "Running in --dry-run mode. Files will not be uploaded..."
-  fi
-
   # Memo:
   #  -background to force reading secrets from env vars (i.e. non-interactive)
   #  -log to add timestamps and other useful data for logging
-  #  -enum-only prints out included/excluded files for filter testing
-  #  -debug is required to do a -enum-only
-  local command="duplicacy backup"
-  command="$command -storage \"$STORAGE_NAME\""
-  command="$command -encrypt -key public.pem"
-  command="$command -stats"
-  command="$command -background"
-  command="$command -log"
-
-  if [ "$DRY_RUN" = true ]; then
-    command="$command -debug -enum-only"
-  fi
-
-  echo "$command"
-  eval "$command"
+  duplicacy backup \
+    -storage "$STORAGE_NAME" \
+    -encrypt -key public.pem \
+    -stats \
+    -background \
+    -log
 }
 
 function verify() {
@@ -158,6 +145,14 @@ function clean_up() {
     -keep 0:30 \
     -background \
     -log
+}
+
+function backup_dry_run() {
+  echo "Running in dry-run mode. Files will not be uploaded..."
+
+  #  -enum-only prints out included/excluded files for filter testing
+  #  -debug is required to do a -enum-only
+  duplicacy -debug -log backup -enum-only
 }
 
 function send_minecraft_command() {
@@ -221,6 +216,11 @@ function main() {
 
     echo "Updating file filter..."
     cp filters .duplicacy/filters
+
+    if [ "$DRY_RUN" = true ]; then
+      backup_dry_run
+      exit 0
+    fi
 
     echo "Beginning backup..."
     local start=$(date +%s)
