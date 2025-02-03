@@ -282,7 +282,7 @@ function main() {
     find "$LOG_DIR" -mindepth 1 -mtime +60 -delete
 
     exit 0
-  } | tee -a "$LOG_DIR/$STORAGE_NAME-$(date +'%Y-%m-%d').log"
+  } 2>&1 | tee -a "$LOG_DIR/$STORAGE_NAME-$(date +'%Y-%m-%d').log"
   # Pipe to tee so that it logs but also outputs to console
   # Memo: -a = append instead of overwrite
 }
