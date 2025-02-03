@@ -58,3 +58,12 @@ To test what will get included/excluded, perform a backup as a dry-run.
 ```bash
 ./backup.sh
 ```
+
+To automate this with a cronjob:
+
+```
+0 0 * * * cd /your/path/pcb-minecraft-backup && /bin/bash ./backup.sh
+```
+
+> [!IMPORTANT]  
+> The `cd` is required because the script assumes it is being run from the git repo directory
